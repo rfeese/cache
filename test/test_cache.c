@@ -152,6 +152,21 @@ void test_Cache_entry_update_refs(){
 	Cache_destroy(c);
 }
 
+void test_Cache_update_refs(){
+	Cache *c = Cache_new(10);
+	myitem *myitem1 = Cache_load_with_scope(c, "myitem1", CSCOPE_LEVEL, _create, _load_from_file, _destroy, _update_refs);
+	Cache_update_refs(c, "myitem1", 1, CSCOPE_UNSPECIFIED);
+	TEST_ASSERT_EQUAL_INT_MESSAGE(2, myitem1->centry->refs, "refs should be 2.");
+	TEST_ASSERT_EQUAL_INT_MESSAGE(CSCOPE_LEVEL, myitem1->centry->scope, "scope should still be CSCOPE_LEVEL");
+	Cache_update_refs(c, "myitem1", -1, CSCOPE_GLOBAL);
+	TEST_ASSERT_EQUAL_INT_MESSAGE(1, myitem1->centry->refs, "refs should be 1.");
+	TEST_ASSERT_EQUAL_INT_MESSAGE(CSCOPE_GLOBAL, myitem1->centry->scope, "scope should still be CSCOPE_GLOBAL");
+	Cache_update_refs(c, "myitem1", -1, CSCOPE_UNSPECIFIED);
+	TEST_ASSERT_EQUAL_INT_MESSAGE(1, _destroy_called, "_destroy should have been called.");
+	TEST_ASSERT_EQUAL_INT_MESSAGE(0, Cache_get_num_entries(c), "num entries should be 0");
+	Cache_destroy(c);
+}
+
 void test_Cache_purge(){
 	Cache *c = Cache_new(10);
 	myitem *myitem1 = Cache_load(c, "myitem1", _create, _load_from_file, _destroy, _update_refs);
@@ -182,6 +197,7 @@ int main(){
 	RUN_TEST(test_Cache_destroy);
 	RUN_TEST(test_Cache_remove);
 	RUN_TEST(test_Cache_entry_update_refs);
+	RUN_TEST(test_Cache_update_refs);
 	RUN_TEST(test_Cache_purge);
 	RUN_TEST(test_Cache_clean_with_scope);
 

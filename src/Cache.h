@@ -126,6 +126,15 @@ extern void Cache_remove(Cache *cache, const char *filename);
 extern void Cache_entry_update_refs(Cache *cache, CacheEntry *entry, int change, int scope);
 
 /**
+ * Update reference counts on an item by name
+ *
+ * @param entry cache entry to update
+ * @param change amount to change the reference count. Typically 1 or -1.
+ * @param scope tag to update the entry with
+ */
+extern void Cache_update_refs(Cache *cache, const char *filename, int change, int scope);
+
+/**
  * Remove items with the requested scope.
  *
  * @param scope tag used to identify items to remove.

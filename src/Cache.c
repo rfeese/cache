@@ -133,6 +133,11 @@ void Cache_entry_update_refs(Cache *cache, CacheEntry *entry, int change, int sc
 	}
 }
 
+void Cache_update_refs(Cache *cache, const char *filename, int change, int scope){
+	CacheEntry *entry = Cache_get(cache, filename);
+	Cache_entry_update_refs(cache, entry, change, scope);
+}
+
 void *Cache_load_with_scope(
 		Cache *cache,
 		const char *filename,
