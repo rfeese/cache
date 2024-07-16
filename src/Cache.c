@@ -71,7 +71,7 @@ void Cache_destroy(Cache *cache){
 	free(cache);
 }
 
-int Cache_hash(const char *filename){
+static int Cache_hash(const char *filename){
 	int hash = 0;
 	for(int i = 0; filename[i] && i < CACHE_FILENAME_MAX; i++){
 		hash += filename[i] * (i + 1);
@@ -79,7 +79,7 @@ int Cache_hash(const char *filename){
 	return hash;
 }
 
-CacheEntry *Cache_get(Cache *cache, const char *filename){
+static CacheEntry *Cache_get(Cache *cache, const char *filename){
 	// find bucket
 	int i = Cache_hash(filename) % cache->size;
 
@@ -94,7 +94,7 @@ CacheEntry *Cache_get(Cache *cache, const char *filename){
 	return bl ? bl->cache_entry : NULL;
 }
 
-void Cache_put(Cache *cache, CacheEntry *entry, 
+static void Cache_put(Cache *cache, CacheEntry *entry, 
 		void (*destroy)(Cache *cache, void *item, int update_subitem_refs),
 		void (*update_refs)(Cache *cache, void *item, int change, int scope) ){
 	// find bucket
