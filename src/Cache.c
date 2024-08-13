@@ -95,8 +95,8 @@ static CacheEntry *Cache_get(Cache *cache, const char *filename){
 }
 
 static void Cache_put(Cache *cache, CacheEntry *entry, 
-		void (*destroy)(Cache *cache, void *item, int update_subitem_refs),
-		void (*update_refs)(Cache *cache, void *item, int change, int scope) ){
+		CacheEntry_destroy_t destroy,
+		CacheEntry_update_refs_t update_refs){
 	// find bucket
 	int i = Cache_hash(entry->filename) % cache->size;
 
@@ -142,10 +142,10 @@ void *Cache_load_with_scope(
 		Cache *cache,
 		const char *filename,
 		unsigned int scope,
-		void *(*create)(CacheEntry *entry),
-		int (*load)(Cache *cache, void *item, const char *filename, int scope),
-		void (*destroy)(Cache *cache, void *item, int update_subitem_refs),
-		void (*update_refs)(Cache *cache, void *item, int change, int scope)
+		CacheEntry_create_t create,
+		CacheEntry_item_load_t load,
+		CacheEntry_destroy_t destroy,
+		CacheEntry_update_refs_t update_refs
 ){
 	CacheEntry *entry = NULL;
 	// if item already exists in cache, update refs and return it
@@ -179,10 +179,10 @@ void *Cache_load_with_scope(
 void *Cache_load(
 		Cache *cache,
 		const char *filename,
-		void *(*create)(CacheEntry *entry),
-		int (*load)(Cache *cache, void *item, const char *filename, int scope),
-		void (*destroy)(Cache *cache, void *item, int update_subitem_refs),
-		void (*update_refs)(Cache *cache, void *item, int change, int scope)
+		CacheEntry_create_t create,
+		CacheEntry_item_load_t load,
+		CacheEntry_destroy_t destroy,
+		CacheEntry_update_refs_t update_refs
 ){
 	return Cache_load_with_scope(
 		cache,

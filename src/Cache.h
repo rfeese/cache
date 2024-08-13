@@ -34,6 +34,15 @@ static char *Cache_scopenames[] = { CACHE_SCOPES };
 typedef struct Cache Cache;
 
 /**
+ * Cache entry function prototypes
+ */
+struct CacheEntry;
+typedef void *(*CacheEntry_create_t)(struct CacheEntry *entry);
+typedef int (*CacheEntry_item_load_t)(Cache *cache,void *item, const char *filename, int scope);
+typedef void (*CacheEntry_destroy_t)(Cache *cache, void *item, int update_subitem_refs);
+typedef void (*CacheEntry_update_refs_t)(Cache *cache, void *item, int change, int scope);
+
+/**
  * An item in the cache with metadata required for cache maintenance.
  * Users should not directly modify values or call the functions.
  */
@@ -45,8 +54,8 @@ typedef struct CacheEntry {
 	// private
 	unsigned int refs; // number of active references based on load calls
 	// item maintenance methods
-	void (*destroy)(Cache *cache, void *item, int update_subitem_refs);
-	void (*update_refs)(Cache *cache, void *item, int change, int scope);
+	CacheEntry_destroy_t destroy;
+	CacheEntry_update_refs_t update_refs;
 } CacheEntry;
 
 /**
@@ -85,10 +94,10 @@ extern void *Cache_load_with_scope(
 		Cache *cache,
 		const char *filename,
 		unsigned int scope,
-		void *(*create)(CacheEntry *entry),
-		int (*load)(Cache *cache, void *item, const char *filename, int scope),
-		void (*destroy)(Cache *cache, void *item, int update_subitem_refs),
-		void (*update_refs)(Cache *cache, void *item, int change, int scope)
+		CacheEntry_create_t create,
+		CacheEntry_item_load_t load,
+		CacheEntry_destroy_t destroy,
+		CacheEntry_update_refs_t update_refs
 );
 
 /**
@@ -103,10 +112,10 @@ extern void *Cache_load_with_scope(
 extern void *Cache_load(
 		Cache *cache,
 		const char *filename,
-		void *(*create)(CacheEntry *entry),
-		int (*load)(Cache *cache,void *item, const char *filename, int scope),
-		void (*destroy)(Cache *cache, void *item, int update_subitem_refs),
-		void (*update_refs)(Cache *cache, void *item, int change, int scope)
+		CacheEntry_create_t create,
+		CacheEntry_item_load_t load,
+		CacheEntry_destroy_t destroy,
+		CacheEntry_update_refs_t update_refs
 );
 
 /**
