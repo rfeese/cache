@@ -237,3 +237,27 @@ void Cache_clean_with_scope(Cache *cache, unsigned int scope){
 		}
 	}
 }
+
+float Cache_bucket_utilization(Cache *cache){
+	int buckets_used = 0;
+	for(int i = 0; i < cache->size; i++){
+		if(cache->bucket[i]){
+			buckets_used += 1;
+		}
+	}
+	return (float)buckets_used / (float)cache->size;
+}
+
+float Cache_average_entry_depth(Cache *cache){
+	int entry_depths = 0;
+	for(int i = 0; i < cache->size; i++){
+		BucketList *list = cache->bucket[i];
+		int depth = 1;
+		while(list){
+			entry_depths += depth;
+			depth += 1;
+			list = list->next;
+		}
+	}
+	return (float)entry_depths / (float)cache->num_entries;
+}

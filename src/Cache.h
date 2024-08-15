@@ -149,4 +149,14 @@ extern void Cache_update_refs(Cache *cache, const char *filename, int change, in
  * @param scope tag used to identify items to remove.
  */
 extern void Cache_clean_with_scope(Cache *cache, unsigned int scope);
+
+/**
+ * Calculate the percentate of buckets containing Cache Entries.
+ */
+float Cache_bucket_utilization(Cache *cache);
+
+/**
+ * Calculate the average depth of Cache Entries in bucket lists.
+ */
+float Cache_average_entry_depth(Cache *cache);
 #endif // CACHE_H

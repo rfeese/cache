@@ -53,11 +53,17 @@ int main(int argc, char* argv[]){
 	Foo *foo40 = Foo_cache_load(c, "foofile40");
 	Foo *foo41 = Foo_cache_load(c, "foofile41");
 	Foo *foo42 = Foo_cache_load(c, "foofile42");
+	printf("Foos loaded.\n");
 	printf("There are %d entries in the cache.\n", Cache_get_num_entries(c));
+	printf("Cache bucket utilization: %0.4f.\n", Cache_bucket_utilization(c));
+	printf("Cache average entry depth: %0.4f.\n\n", Cache_average_entry_depth(c));
 
 	// loading a file already in the cache should be faster
 	Foo *foo1_copy = Foo_cache_load(c, "foofile1");
+	printf("Duplicate Foo loaded.\n");
 	printf("There are %d entries in the cache.\n", Cache_get_num_entries(c));
+	printf("Cache bucket utilization: %0.4f.\n", Cache_bucket_utilization(c));
+	printf("Cache average entry depth: %0.4f.\n\n", Cache_average_entry_depth(c));
 
 	// demonstrate use of scopes
 	Foo *foo50 = Foo_cache_load_with_scope(c, "foofile50", CSCOPE_LEVEL);
@@ -101,11 +107,16 @@ int main(int argc, char* argv[]){
 	Foo *foo88 = Foo_cache_load_with_scope(c, "foofile88", CSCOPE_LEVEL);
 	Foo *foo89 = Foo_cache_load_with_scope(c, "foofile89", CSCOPE_LEVEL);
 
+	printf("Scope demo.\n");
 	printf("There are %d entries in the cache.\n", Cache_get_num_entries(c));
+	printf("Cache bucket utilization: %0.4f.\n", Cache_bucket_utilization(c));
+	printf("Cache average entry depth: %0.4f.\n\n", Cache_average_entry_depth(c));
 
 	Cache_clean_with_scope(c, CSCOPE_LEVEL);
-	
-	printf("There are %d entries in the cache.\n", Cache_get_num_entries(c));
+
+	printf("There are %d entries in the cache after scope clean.\n", Cache_get_num_entries(c));
+	printf("Cache bucket utilization: %0.4f.\n", Cache_bucket_utilization(c));
+	printf("Cache average entry depth: %0.4f.\n\n", Cache_average_entry_depth(c));
 
 	Cache_destroy(c);
 	return EXIT_SUCCESS;
