@@ -71,10 +71,10 @@ void Cache_destroy(Cache *cache){
 	free(cache);
 }
 
-static int Cache_hash(const char *filename){
-	int hash = 0;
+static unsigned int Cache_hash(const char *filename){
+	unsigned int hash = 128;
 	for(int i = 0; filename[i] && i < CACHE_FILENAME_MAX; i++){
-		hash += filename[i] * (i + 1);
+		hash = (hash << 3) + hash + filename[i];
 	}
 	return hash;
 }

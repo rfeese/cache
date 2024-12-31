@@ -8,7 +8,7 @@
 
 int main(int argc, char* argv[]){
 
-	Cache *c = Cache_new(10);
+	Cache *c = Cache_new(10000);
 
 	// demonstrate loading intsances of Foo
 	Foo *foo1 = Foo_cache_load(c, "foofile1");
@@ -115,6 +115,18 @@ int main(int argc, char* argv[]){
 	Cache_clean_with_scope(c, CSCOPE_LEVEL);
 
 	printf("There are %d entries in the cache after scope clean.\n", Cache_get_num_entries(c));
+	printf("Cache bucket utilization: %0.4f.\n", Cache_bucket_utilization(c));
+	printf("Cache average entry depth: %0.4f.\n\n", Cache_average_entry_depth(c));
+
+	Foo *tmpfoo = NULL;
+	char tmpfoofilename[16] = {};
+	for(int i = 100; i < 9000; i++){
+		snprintf(tmpfoofilename, 16, "foofile%d", i);
+		tmpfoo = Foo_cache_load_with_scope(c, tmpfoofilename, CSCOPE_LEVEL);
+	}
+
+	printf("Load more foos demo.\n");
+	printf("There are %d entries in the cache now.\n", Cache_get_num_entries(c));
 	printf("Cache bucket utilization: %0.4f.\n", Cache_bucket_utilization(c));
 	printf("Cache average entry depth: %0.4f.\n\n", Cache_average_entry_depth(c));
 
