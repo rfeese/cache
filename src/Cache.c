@@ -56,7 +56,7 @@ void Cache_purge(Cache *cache){
 			BucketList *bl = cache->bucket[i];
 			cache->bucket[i] = bl->next;
 			// purge the item
-			bl->cache_entry->destroy(cache, bl->cache_entry->item, 0);
+			bl->cache_entry->vtable->destroy(cache, bl->cache_entry->item, 0);
 			free(bl->cache_entry);
 			free(bl);
 		}
@@ -94,9 +94,7 @@ static CacheEntry *Cache_get(Cache *cache, const char *filename){
 	return bl ? bl->cache_entry : NULL;
 }
 
-static void Cache_put(Cache *cache, CacheEntry *entry, 
-		CacheEntry_destroy_t destroy,
-		CacheEntry_update_refs_t update_refs){
+static void Cache_put(Cache *cache, CacheEntry *entry, const CacheEntryVTable *vtable){
 	// find bucket
 	int i = Cache_hash(entry->filename) % cache->size;
 
@@ -111,10 +109,9 @@ static void Cache_put(Cache *cache, CacheEntry *entry,
 	if(!bl){
 		// insert at head
 		entry->refs = 1;
-		entry->destroy = destroy;
-		entry->update_refs = update_refs;
 		BucketList *newbl = malloc(sizeof(BucketList));
 		newbl->cache_entry = entry;
+		newbl->cache_entry->vtable = vtable;
 		newbl->next = cache->bucket[i];
 		cache->bucket[i] = newbl;
 		cache->num_entries++;
@@ -122,7 +119,7 @@ static void Cache_put(Cache *cache, CacheEntry *entry,
 }
 
 void Cache_entry_update_refs(Cache *cache, CacheEntry *entry, int change, int scope){
-	entry->update_refs(cache, entry->item, change, scope);
+	entry->vtable->update_refs(cache, entry->item, change, scope);
 	entry->refs = entry->refs + change;
 	if(entry->refs <= 0){
 		Cache_remove(cache, entry->filename);
@@ -142,10 +139,7 @@ void *Cache_load_with_scope(
 		Cache *cache,
 		const char *filename,
 		unsigned int scope,
-		CacheEntry_create_t create,
-		CacheEntry_item_load_t load,
-		CacheEntry_destroy_t destroy,
-		CacheEntry_update_refs_t update_refs
+		const CacheEntryVTable *vtable
 ){
 	CacheEntry *entry = NULL;
 	// if item already exists in cache, update refs and return it
@@ -155,22 +149,22 @@ void *Cache_load_with_scope(
 	}
 	// create new instance of item
 	entry = malloc(sizeof(CacheEntry));
-	void *item = create(entry);
+	void *item = vtable->create(entry);
 	if(!item){
 		free(entry);
 		return NULL;
 	}
 	// load item
-	if(load(cache, item, filename, scope)){
+	if(vtable->item_load(cache, item, filename, scope)){
 		snprintf(entry->filename, CACHE_FILENAME_MAX, "%s", filename);
 		entry->item = item;
 		entry->scope = scope;
-		Cache_put(cache, entry, destroy, update_refs);
+		Cache_put(cache, entry, vtable);
 		return item;
 	}
 	// item did not load correctly so destroy it
 	else{
-		destroy(cache, item, 1);
+		vtable->destroy(cache, item, 1);
 		free(entry);
 	}
 	return NULL;
@@ -179,19 +173,13 @@ void *Cache_load_with_scope(
 void *Cache_load(
 		Cache *cache,
 		const char *filename,
-		CacheEntry_create_t create,
-		CacheEntry_item_load_t load,
-		CacheEntry_destroy_t destroy,
-		CacheEntry_update_refs_t update_refs
+		const CacheEntryVTable *vtable
 ){
 	return Cache_load_with_scope(
 		cache,
 		filename,
 		CSCOPE_UNSPECIFIED,
-		create,
-		load,
-		destroy,
-		update_refs);
+		vtable);
 }
 
 void Cache_remove(Cache *cache, const char *filename){
@@ -210,7 +198,7 @@ void Cache_remove(Cache *cache, const char *filename){
 		// parent->next needs to point to blp->next
 		BucketList *bl = *blp;
 		*blp = bl->next;
-		bl->cache_entry->destroy(cache, bl->cache_entry->item, 1);
+		bl->cache_entry->vtable->destroy(cache, bl->cache_entry->item, 1);
 		free(bl->cache_entry);
 		free(bl);
 		cache->num_entries--;
@@ -222,7 +210,7 @@ void Cache_clean_with_scope(Cache *cache, unsigned int scope){
 		BucketList **blp = &cache->bucket[i];
 		while(*blp){
 			if((*blp)->cache_entry->scope == scope){
-				(*blp)->cache_entry->destroy(cache, (*blp)->cache_entry->item, 1);
+				(*blp)->cache_entry->vtable->destroy(cache, (*blp)->cache_entry->item, 1);
 				BucketList *oldbl = *blp;
 				// modify the list pointer to point to next
 				*blp = oldbl->next;

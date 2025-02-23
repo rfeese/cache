@@ -8,7 +8,7 @@
 
 int main(int argc, char* argv[]){
 
-	Cache *c = Cache_new(10000);
+	Cache *c = Cache_new(50000);
 
 	// demonstrate loading intsances of Foo
 	Foo *foo1 = Foo_cache_load(c, "foofile1");
@@ -120,7 +120,7 @@ int main(int argc, char* argv[]){
 
 	Foo *tmpfoo = NULL;
 	char tmpfoofilename[16] = {};
-	for(int i = 100; i < 9000; i++){
+	for(int i = 100; i < 50000; i++){
 		snprintf(tmpfoofilename, 16, "foofile%d", i);
 		tmpfoo = Foo_cache_load_with_scope(c, tmpfoofilename, CSCOPE_LEVEL);
 	}

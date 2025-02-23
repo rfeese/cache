@@ -39,6 +39,13 @@ void _destroy(Cache *cache, void *item, int update_subitem_refs){
 	_destroy_called = 1;
 }
 
+static const CacheEntryVTable myitem_vtable = {
+	.create = _create,
+	.item_load = _load_from_file,
+	.destroy = _destroy,
+	.update_refs = _update_refs
+};
+
 // runs before each test
 void setUp(void){
 	_create_called = 0;
@@ -60,10 +67,11 @@ void test_Cache_new(){
 
 void test_Cache_load_with_scope(){
 	Cache *c = Cache_new(10);
-	myitem *myitem1 = Cache_load_with_scope(c, "myitem1", CSCOPE_LEVEL, _create, _load_from_file, _destroy, _update_refs);
+	myitem *myitem1 = Cache_load_with_scope(c, "myitem1", CSCOPE_LEVEL, &myitem_vtable);
 	TEST_ASSERT_EQUAL_INT_MESSAGE(CSCOPE_LEVEL, myitem1->centry->scope, "entry scope should have been set.");
 	TEST_ASSERT_EQUAL_INT_MESSAGE(1, Cache_get_num_entries(c), "num entries should be 1");
-	myitem *myitem1_2 = Cache_load_with_scope(c, "myitem1", CSCOPE_GLOBAL, _create, _load_from_file, _destroy, _update_refs);
+	myitem *myitem1_2 = Cache_load_with_scope(c, "myitem1", CSCOPE_GLOBAL, &myitem_vtable);
+	TEST_ASSERT_NOT_NULL_MESSAGE(myitem1_2, "myitem1_2 should not be null.");
 	TEST_ASSERT_EQUAL_INT_MESSAGE(CSCOPE_GLOBAL, myitem1->centry->scope, "entry scope should have been updated.");
 	TEST_ASSERT_EQUAL_INT_MESSAGE(1, Cache_get_num_entries(c), "num entries should be 1");
 	Cache_destroy(c);
@@ -73,7 +81,7 @@ void test_Cache_load(){
 	Cache *c = Cache_new(10);
 
 	_update_refs_called = 0;
-	myitem *myitem1 = Cache_load(c, "myitem1", _create, _load_from_file, _destroy, _update_refs);
+	myitem *myitem1 = Cache_load(c, "myitem1", &myitem_vtable);
 	TEST_ASSERT_NOT_NULL_MESSAGE(myitem1, "myitem1 should not be null.");
 	TEST_ASSERT_EQUAL_INT_MESSAGE(1, _create_called, "_create should have been called.");
 	TEST_ASSERT_EQUAL_INT_MESSAGE(1, _load_from_file_called, "_load_from_file should have been called.");
@@ -86,7 +94,7 @@ void test_Cache_load(){
 	_create_called = 0;
 	_load_from_file_called = 0;
 	_update_refs_called = 0;
-	myitem *myitem1_2 = Cache_load(c, "myitem1", _create, _load_from_file, _destroy, _update_refs);
+	myitem *myitem1_2 = Cache_load(c, "myitem1", &myitem_vtable);
 	TEST_ASSERT_EQUAL_PTR_MESSAGE(myitem1, myitem1_2, "myitem1_2 should reference the same item as myitem1.");
 	TEST_ASSERT_NOT_NULL_MESSAGE(myitem1_2, "myitem1_2 should not be null.");
 	TEST_ASSERT_EQUAL_INT_MESSAGE(0, _create_called, "_create should NOT have been called.");
@@ -97,7 +105,7 @@ void test_Cache_load(){
 	TEST_ASSERT_EQUAL_INT_MESSAGE(1, _update_refs_called, "_update_refs should have been called.");
 	TEST_ASSERT_EQUAL_INT_MESSAGE(1, Cache_get_num_entries(c), "num entries should be 1");
 
-	myitem *myitem2 = Cache_load(c, "myitem2", _create, _load_from_file, _destroy, _update_refs);
+	myitem *myitem2 = Cache_load(c, "myitem2", &myitem_vtable);
 	TEST_ASSERT_NOT_NULL_MESSAGE(myitem2, "myitem2 should not be null.");
 	TEST_ASSERT_EQUAL_INT_MESSAGE(1, _create_called, "_create should have been called.");
 	TEST_ASSERT_EQUAL_INT_MESSAGE(1, _load_from_file_called, "_load_from_file should have been called.");
@@ -111,14 +119,17 @@ void test_Cache_load(){
 void test_Cache_destroy(){
 	Cache *c = Cache_new(10);
 
-	myitem *myitem1 = Cache_load(c, "myitem1", _create, _load_from_file, _destroy, _update_refs);
-	myitem *myitem2 = Cache_load(c, "myitem2", _create, _load_from_file, _destroy, _update_refs);
+	myitem *myitem1 = Cache_load(c, "myitem1", &myitem_vtable);
+	myitem *myitem2 = Cache_load(c, "myitem2", &myitem_vtable);
+	TEST_ASSERT_NOT_NULL_MESSAGE(myitem1, "myitem1 should not be null.");
+	TEST_ASSERT_NOT_NULL_MESSAGE(myitem2, "myitem2 should not be null.");
 	Cache_destroy(c);
 }
 
 void test_Cache_remove(){
 	Cache *c = Cache_new(10);
-	myitem *myitem1 = Cache_load(c, "myitem1", _create, _load_from_file, _destroy, _update_refs);
+	myitem *myitem1 = Cache_load(c, "myitem1", &myitem_vtable);
+	TEST_ASSERT_NOT_NULL_MESSAGE(myitem1, "myitem1 should not be null.");
 
 	// remove non-existant	
 	Cache_remove(c, "myitem5");
@@ -131,7 +142,7 @@ void test_Cache_remove(){
 	// full load should be required after item was previously removed
 	_create_called = 0;
 	_load_from_file_called = 0;
-	myitem1 = Cache_load(c, "myitem1", _create, _load_from_file, _destroy, _update_refs);
+	myitem1 = Cache_load(c, "myitem1", &myitem_vtable);
 	TEST_ASSERT_EQUAL_INT_MESSAGE(1, _create_called, "_create should have been called.");
 	TEST_ASSERT_EQUAL_INT_MESSAGE(1, _load_from_file_called, "_load_from_file should have been called.");
 	Cache_destroy(c);
@@ -139,7 +150,7 @@ void test_Cache_remove(){
 
 void test_Cache_entry_update_refs(){
 	Cache *c = Cache_new(10);
-	myitem *myitem1 = Cache_load_with_scope(c, "myitem1", CSCOPE_LEVEL, _create, _load_from_file, _destroy, _update_refs);
+	myitem *myitem1 = Cache_load_with_scope(c, "myitem1", CSCOPE_LEVEL, &myitem_vtable);
 	Cache_entry_update_refs(c, myitem1->centry, 1, CSCOPE_UNSPECIFIED);
 	TEST_ASSERT_EQUAL_INT_MESSAGE(2, myitem1->centry->refs, "refs should be 2.");
 	TEST_ASSERT_EQUAL_INT_MESSAGE(CSCOPE_LEVEL, myitem1->centry->scope, "scope should still be CSCOPE_LEVEL");
@@ -154,7 +165,7 @@ void test_Cache_entry_update_refs(){
 
 void test_Cache_update_refs(){
 	Cache *c = Cache_new(10);
-	myitem *myitem1 = Cache_load_with_scope(c, "myitem1", CSCOPE_LEVEL, _create, _load_from_file, _destroy, _update_refs);
+	myitem *myitem1 = Cache_load_with_scope(c, "myitem1", CSCOPE_LEVEL, &myitem_vtable);
 	Cache_update_refs(c, "myitem1", 1, CSCOPE_UNSPECIFIED);
 	TEST_ASSERT_EQUAL_INT_MESSAGE(2, myitem1->centry->refs, "refs should be 2.");
 	TEST_ASSERT_EQUAL_INT_MESSAGE(CSCOPE_LEVEL, myitem1->centry->scope, "scope should still be CSCOPE_LEVEL");
@@ -169,9 +180,12 @@ void test_Cache_update_refs(){
 
 void test_Cache_purge(){
 	Cache *c = Cache_new(10);
-	myitem *myitem1 = Cache_load(c, "myitem1", _create, _load_from_file, _destroy, _update_refs);
-	myitem *myitem2 = Cache_load(c, "myitem2", _create, _load_from_file, _destroy, _update_refs);
-	myitem *myitem3 = Cache_load(c, "myitem3", _create, _load_from_file, _destroy, _update_refs);
+	myitem *myitem1 = Cache_load(c, "myitem1", &myitem_vtable);
+	myitem *myitem2 = Cache_load(c, "myitem2", &myitem_vtable);
+	myitem *myitem3 = Cache_load(c, "myitem3", &myitem_vtable);
+	TEST_ASSERT_NOT_NULL_MESSAGE(myitem1, "myitem1 should not be null.");
+	TEST_ASSERT_NOT_NULL_MESSAGE(myitem2, "myitem2 should not be null.");
+	TEST_ASSERT_NOT_NULL_MESSAGE(myitem3, "myitem3 should not be null.");
 	Cache_purge(c);
 	TEST_ASSERT_EQUAL_INT_MESSAGE(0, Cache_get_num_entries(c), "num entries should be 0");
 	Cache_destroy(c);
@@ -179,11 +193,16 @@ void test_Cache_purge(){
 
 void test_Cache_clean_with_scope(){
 	Cache *c = Cache_new(10);
-	myitem *myitem1 = Cache_load_with_scope(c, "myitem1", CSCOPE_LEVEL, _create, _load_from_file, _destroy, _update_refs);
-	myitem *myitem2 = Cache_load_with_scope(c, "myitem2", CSCOPE_GLOBAL, _create, _load_from_file, _destroy, _update_refs);
-	myitem *myitem3 = Cache_load_with_scope(c, "myitem3", CSCOPE_UNSPECIFIED, _create, _load_from_file, _destroy, _update_refs);
-	myitem *myitem4 = Cache_load_with_scope(c, "myitem4", CSCOPE_GLOBAL, _create, _load_from_file, _destroy, _update_refs);
-	myitem *myitem5 = Cache_load_with_scope(c, "myitem5", CSCOPE_LEVEL, _create, _load_from_file, _destroy, _update_refs);
+	myitem *myitem1 = Cache_load_with_scope(c, "myitem1", CSCOPE_LEVEL, &myitem_vtable);
+	myitem *myitem2 = Cache_load_with_scope(c, "myitem2", CSCOPE_GLOBAL, &myitem_vtable);
+	myitem *myitem3 = Cache_load_with_scope(c, "myitem3", CSCOPE_UNSPECIFIED, &myitem_vtable);
+	myitem *myitem4 = Cache_load_with_scope(c, "myitem4", CSCOPE_GLOBAL, &myitem_vtable);
+	myitem *myitem5 = Cache_load_with_scope(c, "myitem5", CSCOPE_LEVEL, &myitem_vtable);
+	TEST_ASSERT_NOT_NULL_MESSAGE(myitem1, "myitem1 should not be null.");
+	TEST_ASSERT_NOT_NULL_MESSAGE(myitem2, "myitem2 should not be null.");
+	TEST_ASSERT_NOT_NULL_MESSAGE(myitem3, "myitem3 should not be null.");
+	TEST_ASSERT_NOT_NULL_MESSAGE(myitem4, "myitem4 should not be null.");
+	TEST_ASSERT_NOT_NULL_MESSAGE(myitem5, "myitem5 should not be null.");
 	Cache_clean_with_scope(c, CSCOPE_LEVEL);
 	TEST_ASSERT_EQUAL_INT_MESSAGE(3, Cache_get_num_entries(c), "num entries should be 3");
 	Cache_destroy(c);

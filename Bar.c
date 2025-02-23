@@ -2,7 +2,7 @@
 #include "Bar.h"
 
 void *bar_create(CacheEntry *entry);
-int bar_load_from_file(Cache *cache, void *item, const char *filename, int scope);
+int bar_load(Cache *cache, void *item, const char *filename, int scope);
 void bar_destroy(Cache *cache, void *item, int update_subitem_refs);
 void bar_update_refs(Cache *cache, void *item, int change, int sope);
 
@@ -30,15 +30,19 @@ void bar_update_refs(Cache *cache, void *item, int change, int scope){
 	// if bar had sub-item references, we would update them here.
 }
 
+static const CacheEntryVTable bar_vtable = {
+	.create = bar_create,
+	.item_load = bar_load,
+	.destroy = bar_destroy,
+	.update_refs = bar_update_refs
+};
+
 Bar *Bar_cache_load(Cache *cache, const char *filename){
 
 	Bar *b = Cache_load(
 			cache,
 			filename,
-			bar_create,
-			bar_load,
-			bar_destroy,
-			bar_update_refs);
+			&bar_vtable);
 	return b;
 }
 
@@ -49,9 +53,6 @@ Bar *Bar_cache_load_with_scope(Cache *cache, const char *filename, int scope){
 			cache,
 			filename,
 			scope,
-			bar_create,
-			bar_load,
-			bar_destroy,
-			bar_update_refs);
+			&bar_vtable);
 	return b;
 }

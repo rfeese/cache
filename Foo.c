@@ -3,9 +3,16 @@
 #include "Bar.h"
 
 void *foo_create(CacheEntry *entry);
-int foo_load_from_file(Cache *cache, void *item, const char *filename, int scope);
+int foo_load(Cache *cache, void *item, const char *filename, int scope);
 void foo_destroy(Cache *cache, void *item, int update_subitem_refs);
 void foo_update_refs(Cache *cache, void *item, int change, int sope);
+
+static const CacheEntryVTable foo_vtable = {
+	.create = foo_create,
+	.item_load = foo_load,
+	.destroy = foo_destroy,
+	.update_refs = foo_update_refs
+};
 
 void *foo_create(CacheEntry *entry){
 	Foo *newfoo = malloc(sizeof(Foo));
@@ -37,10 +44,7 @@ Foo *Foo_cache_load(Cache *cache, const char *filename){
 	Foo *f = Cache_load(
 			cache,
 			filename,
-			foo_create,
-			foo_load,
-			foo_destroy,
-			foo_update_refs);
+			&foo_vtable);
 	return f;
 }
 
@@ -50,9 +54,6 @@ Foo *Foo_cache_load_with_scope(Cache *cache, const char *filename, int scope){
 			cache,
 			filename,
 			scope,
-			foo_create,
-			foo_load,
-			foo_destroy,
-			foo_update_refs);
+			&foo_vtable);
 	return f;
 }

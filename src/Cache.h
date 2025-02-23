@@ -33,14 +33,25 @@ static char *Cache_scopenames[] = { CACHE_SCOPES };
  */
 typedef struct Cache Cache;
 
+struct CacheEntry;
 /**
  * Cache entry function prototypes
  */
-struct CacheEntry;
+// callback used to allocate memory for the item
 typedef void *(*CacheEntry_create_t)(struct CacheEntry *entry);
+// callback for loading the item (presumably from disk). Must return value indicates success (1) or failure (0).
 typedef int (*CacheEntry_item_load_t)(Cache *cache,void *item, const char *filename, int scope);
+// callback for freeing item from memory and decrementing references on any sub-items.
 typedef void (*CacheEntry_destroy_t)(Cache *cache, void *item, int update_subitem_refs);
+// callback for updating reference counts on sub-items.
 typedef void (*CacheEntry_update_refs_t)(Cache *cache, void *item, int change, int scope);
+
+typedef struct CacheEntryVTable {
+	CacheEntry_create_t		create;
+	CacheEntry_item_load_t		item_load;
+	CacheEntry_destroy_t		destroy;
+	CacheEntry_update_refs_t	update_refs;
+} CacheEntryVTable;
 
 /**
  * An item in the cache with metadata required for cache maintenance.
@@ -53,9 +64,8 @@ typedef struct CacheEntry {
 	unsigned int scope; 
 	// private
 	unsigned int refs; // number of active references based on load calls
-	// item maintenance methods
-	CacheEntry_destroy_t destroy;
-	CacheEntry_update_refs_t update_refs;
+	// item maintenance methods vtable
+	const CacheEntryVTable *vtable;
 } CacheEntry;
 
 /**
@@ -85,19 +95,12 @@ void Cache_destroy(Cache *cache);
  *
  * @param filename the filename/identifier
  * @param scope tag to be assigned or updated.
- * @param create callback used to allocate memory for the item
- * @param load callback for loading the item (presumably from disk). Must return value indicates success (1) or failure (0).
- * @param destroy callback for freeing item from memory and decrementing references on any sub-items.
- * @param update_refs callback for updating reference counts on sub-items.
  */
 extern void *Cache_load_with_scope(
 		Cache *cache,
 		const char *filename,
 		unsigned int scope,
-		CacheEntry_create_t create,
-		CacheEntry_item_load_t load,
-		CacheEntry_destroy_t destroy,
-		CacheEntry_update_refs_t update_refs
+		const CacheEntryVTable *vtable
 );
 
 /**
@@ -112,10 +115,7 @@ extern void *Cache_load_with_scope(
 extern void *Cache_load(
 		Cache *cache,
 		const char *filename,
-		CacheEntry_create_t create,
-		CacheEntry_item_load_t load,
-		CacheEntry_destroy_t destroy,
-		CacheEntry_update_refs_t update_refs
+		const CacheEntryVTable *vtable
 );
 
 /**
