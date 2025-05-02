@@ -38,19 +38,26 @@ struct CacheEntry;
  * Cache entry function prototypes
  */
 // callback used to allocate memory for the item
-typedef void *(*CacheEntry_create_t)(struct CacheEntry *entry);
+#define CACHEENTRY_CREATE(name) void *name(struct CacheEntry *entry)
+typedef CACHEENTRY_CREATE(CacheEntry_create_t);
+
 // callback for loading the item (presumably from disk). Must return value indicates success (1) or failure (0).
-typedef int (*CacheEntry_item_load_t)(Cache *cache,void *item, const char *filename, int scope);
+#define CACHEENTRY_ITEM_LOAD(name) int name(Cache *cache,void *item, const char *filename, int scope)
+typedef CACHEENTRY_ITEM_LOAD(CacheEntry_item_load_t);
+
 // callback for freeing item from memory and decrementing references on any sub-items.
-typedef void (*CacheEntry_destroy_t)(Cache *cache, void *item, int update_subitem_refs);
+#define CACHEENTRY_DESTROY(name) void name(Cache *cache, void *item, int update_subitem_refs)
+typedef CACHEENTRY_DESTROY(CacheEntry_destroy_t);
+
 // callback for updating reference counts on sub-items.
-typedef void (*CacheEntry_update_refs_t)(Cache *cache, void *item, int change, int scope);
+#define CACHEENTRY_UPDATE_REFS(name) void name(Cache *cache, void *item, int change, int scope)
+typedef CACHEENTRY_UPDATE_REFS(CacheEntry_update_refs_t);
 
 typedef struct CacheEntryVTable {
-	CacheEntry_create_t		create;
-	CacheEntry_item_load_t		item_load;
-	CacheEntry_destroy_t		destroy;
-	CacheEntry_update_refs_t	update_refs;
+	CacheEntry_create_t		*create;
+	CacheEntry_item_load_t		*item_load;
+	CacheEntry_destroy_t		*destroy;
+	CacheEntry_update_refs_t	*update_refs;
 } CacheEntryVTable;
 
 /**

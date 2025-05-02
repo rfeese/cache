@@ -28,7 +28,7 @@ Cache *Cache_new(int size_hint){
 	static int primes[] = { 509, 509, 1021, 2053, 4093, 8191, 16381, 32771, 65521 };
 
 	int i;
-	for(i = 1; primes[i] < size_hint; i++){}
+	for(i = 1; i < 9  && primes[i] < size_hint; i++){}
 	// primes[i] is first prime larger than size_hint
 	// primes[i-1] is number of buckets
 

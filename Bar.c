@@ -1,41 +1,41 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "Bar.h"
 
-void *bar_create(CacheEntry *entry);
-int bar_load(Cache *cache, void *item, const char *filename, int scope);
-void bar_destroy(Cache *cache, void *item, int update_subitem_refs);
-void bar_update_refs(Cache *cache, void *item, int change, int sope);
+static const CacheEntryVTable bar_vtable = {
+	.create = &bar_create,
+	.item_load = &bar_load,
+	.destroy = &bar_destroy,
+	.update_refs = &bar_update_refs
+};
 
-void *bar_create(CacheEntry *entry){
+CACHEENTRY_CREATE(bar_create){
 	Bar *newbar = malloc(sizeof(Bar));
 	newbar->centry = entry;
 	return newbar;
 }
 
-int bar_load(Cache *cache, void *item, const char *filename, int scope){
+CACHEENTRY_ITEM_LOAD(bar_load){
 	// routine for loading bar content
 	Bar *bar = item;
 	bar->property1 = 1;
 	return 1;
 }
 
-void bar_destroy(Cache *cache, void *item, int update_subitem_refs){
+CACHEENTRY_DESTROY(bar_destroy){
 	if(update_subitem_refs){
 		bar_update_refs(cache, item, -1, CSCOPE_UNSPECIFIED);
 	}
+	/*
+	Bar *bar = item;
+	printf("Destroying Bar %s.\n", bar->centry->filename);
+	*/
 	free(item);
 }
 
-void bar_update_refs(Cache *cache, void *item, int change, int scope){
+CACHEENTRY_UPDATE_REFS(bar_update_refs){
 	// if bar had sub-item references, we would update them here.
 }
-
-static const CacheEntryVTable bar_vtable = {
-	.create = bar_create,
-	.item_load = bar_load,
-	.destroy = bar_destroy,
-	.update_refs = bar_update_refs
-};
 
 Bar *Bar_cache_load(Cache *cache, const char *filename){
 
